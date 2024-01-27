@@ -11,7 +11,7 @@ scale: 1
 num_gpu: 8
 manual_seed: 10
 n_sequence: 23
-n_frames_per_video: 100
+n_frames_per_video: 72
 dir_data: ./dataset/GoPro/train/
 n_colors: 3
 rgb_range: 1
