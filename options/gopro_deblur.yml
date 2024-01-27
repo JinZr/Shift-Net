@@ -8,7 +8,7 @@
 name: GOPRO_deblur_experiment
 model_type: ImageRestorationModel1
 scale: 1
-num_gpu: 8
+num_gpu: 2
 manual_seed: 10
 n_sequence: 23
 n_frames_per_video: 72
