@@ -117,7 +117,7 @@ def create_train_val_dataloader(opt, logger):
             train_set = NTU_dataset(
                 data_root="",
                 indexfile_path="/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
-                crop_size=0,
+                crop_size=512,
                 transform=transforms.ToTensor(),
             )
             train_sampler = EnlargedSampler(
