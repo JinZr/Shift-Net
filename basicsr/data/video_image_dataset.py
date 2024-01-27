@@ -110,6 +110,7 @@ class VideoImageDataset(data.Dataset):
         #     inputs, gts, filenames = self._load_file_from_loaded_data(idx)
         # else:
         inputs, gts, filenames = self._load_file(idx)
+        print(inputs.shape, gts.shape)
 
         inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq)]
         inputs_concat = np.concatenate(inputs_list, axis=2)
