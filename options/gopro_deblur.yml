@@ -10,8 +10,8 @@ model_type: ImageRestorationModel1
 scale: 1
 num_gpu: 2
 manual_seed: 10
-n_sequence: 23
-n_frames_per_video: 72
+n_sequence: 5
+n_frames_per_video: 100
 dir_data: ./dataset/GoPro/train/
 n_colors: 3
 rgb_range: 1
