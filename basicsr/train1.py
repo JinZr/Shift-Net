@@ -58,7 +58,6 @@ def parse_options(is_train=True):
     args = parser.parse_args()
     opt = parse(args.opt, is_train=is_train)
 
-    init_dist(args.launcher)
     # distributed settings
     if args.launcher == "none":
         opt["dist"] = False
