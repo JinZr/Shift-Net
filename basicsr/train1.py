@@ -22,6 +22,7 @@ import torch.distributed as dist
 
 from basicsr.data import create_dataloader, create_dataset
 from basicsr.data.data_sampler import EnlargedSampler
+from basicsr.data.ntu_dataset import NTU_dataset
 from basicsr.data.prefetch_dataloader import CPUPrefetcher, CUDAPrefetcher
 from basicsr.data.video_image_dataset import VideoImageDataset
 from basicsr.models import create_model
@@ -111,7 +112,12 @@ def create_train_val_dataloader(opt, logger):
         if True:
             dataset_enlarge_ratio = 1  # dataset_opt.get('dataset_enlarge_ratio', 1)
             # print(opt)
-            train_set = VideoImageDataset(opt)
+            # train_set = VideoImageDataset(opt)
+            train_set = NTU_dataset(
+                data_root="",
+                indexfile_path="/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
+                crop_size=0,
+            )
             train_sampler = EnlargedSampler(
                 train_set, opt["world_size"], opt["rank"], dataset_enlarge_ratio
             )
