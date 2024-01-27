@@ -113,9 +113,9 @@ class VideoImageDataset(data.Dataset):
         inputs, gts, filenames = self._load_file(idx)
         print(inputs.shape, gts.shape)
 
-        inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq)]
+        inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq - 1)]
         inputs_concat = np.concatenate(inputs_list, axis=2)
-        gts_list = [gts[i, :, :, :] for i in range(self.n_seq)]
+        gts_list = [gts[i, :, :, :] for i in range(self.n_seq - 1)]
         gts_concat = np.concatenate(gts_list, axis=2)
         inputs_concat, gts_concat = self.get_patch(
             inputs_concat, gts_concat, self.size_must_mode
