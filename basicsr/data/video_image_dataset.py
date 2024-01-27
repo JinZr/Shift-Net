@@ -46,9 +46,10 @@ class VideoImageDataset(data.Dataset):
         self.images_gt, self.images_input = self._scan()
 
         self.num_video = len(self.images_gt)
-        self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
-            self.n_frames_video
-        )
+        # self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
+        #     self.n_frames_video
+        # )
+        self.num_frame = sum(self.n_frames_video)
         print("Number of videos to load:", self.num_video)
         print("Number of frames to load:", self.num_frame)
         self.n_colors = args["n_colors"]
