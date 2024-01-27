@@ -60,23 +60,22 @@ def parse_options(is_train=True):
     opt = parse(args.opt, is_train=is_train)
 
     # distributed settings
-    import os
+    # import os
 
     # os.environ["RANK"] = "0"
     # os.environ["WORLD_SIZE"] = "2"
     # os.environ["MASTER_ADDR"] = "localhost"
     # os.environ["MASTER_PORT"] = "5678"
-    # if args.launcher == "none":
-    #     opt["dist"] = False
-    #     print("Disable distributed.", flush=True)
-    # else:
-    #     opt["dist"] = True
-    #     if args.launcher == "slurm" and "dist_params" in opt:
-    #         init_dist(args.launcher, **opt["dist_params"])
-    #     else:
-    #         init_dist(args.launcher)
-    #         print("init dist .. ", args.launcher)
-    _init_dist_pytorch(backend="nccl")
+    if args.launcher == "none":
+        opt["dist"] = False
+        print("Disable distributed.", flush=True)
+    else:
+        opt["dist"] = True
+        if args.launcher == "slurm" and "dist_params" in opt:
+            init_dist(args.launcher, **opt["dist_params"])
+        else:
+            init_dist(args.launcher)
+            print("init dist .. ", args.launcher)
 
     opt["rank"], opt["world_size"] = get_dist_info()
 
