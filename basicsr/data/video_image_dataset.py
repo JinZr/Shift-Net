@@ -28,16 +28,10 @@ class VideoImageDataset(data.Dataset):
                 "r",
             )
         )
-        self.gt_image_list = [obj["gt"] for obj in self.image_list]
-        self.rain_image_list = [obj["rain"] for obj in self.image_list]
-
-        self.rain_names = list(
-            set([name.split("/")[-1].split(".")[0] for name in self.rain_image_list])
-        )
 
         self.name = args["name"]
         # self.train = train
-        self.n_seq = len(self.rain_names)
+        self.n_seq = len(self.image_list)
         self.n_frames_per_video = args["n_frames_per_video"]
         print("n_seq:", self.n_seq)
         print("n_frames_per_video:", self.n_frames_per_video)
@@ -85,13 +79,9 @@ class VideoImageDataset(data.Dataset):
         #     vid_input_names
         # ), "len(vid_gt_names) must equal len(vid_input_names)"
 
-        images_gt = [
-            list(filter(lambda x: vid_name in x, self.gt_image_list))
-            for vid_name in self.rain_names
-        ]
+        images_gt = [[obj["gt"] for obj in img_list] for img_list in self.image_list]
         images_input = [
-            list(filter(lambda x: vid_name in x, self.rain_image_list))
-            for vid_name in self.rain_names
+            [obj["rain"] for obj in img_list] for img_list in self.image_list
         ]
         self.n_frames_video = [len(gt_list) for gt_list in images_gt]
 
