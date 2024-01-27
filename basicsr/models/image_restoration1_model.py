@@ -193,7 +193,7 @@ class ImageRestorationModel1(BaseModel):
 
     def feed_data(self, data):
         lq, gt, _ = data
-        # print(lq.shape, gt.shape, lq.max(), lq.min())
+        print(lq.shape, gt.shape, lq.max(), lq.min())
         # exit(0)
         self.lq = lq.to(self.device).half()
         self.gt = gt[0][1:-1].to(self.device)
