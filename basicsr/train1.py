@@ -14,6 +14,7 @@ import time
 from os import path as osp
 
 import torch
+from torch import distributed as dist
 from torchvision import transforms
 
 sys.path.append("/mnt/cache/zhangmanyuan/proj/CDVD/")
@@ -39,7 +40,7 @@ from basicsr.utils import (
     mkdir_and_rename,
     set_random_seed,
 )
-from basicsr.utils.dist_util import get_dist_info, init_dist
+from basicsr.utils.dist_util import _init_dist_pytorch, get_dist_info, init_dist
 from basicsr.utils.options import dict2str, parse
 
 
@@ -61,20 +62,21 @@ def parse_options(is_train=True):
     # distributed settings
     import os
 
-    os.environ["RANK"] = "0"
-    os.environ["WORLD_SIZE"] = "2"
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "5678"
-    if args.launcher == "none":
-        opt["dist"] = False
-        print("Disable distributed.", flush=True)
-    else:
-        opt["dist"] = True
-        if args.launcher == "slurm" and "dist_params" in opt:
-            init_dist(args.launcher, **opt["dist_params"])
-        else:
-            init_dist(args.launcher)
-            print("init dist .. ", args.launcher)
+    # os.environ["RANK"] = "0"
+    # os.environ["WORLD_SIZE"] = "2"
+    # os.environ["MASTER_ADDR"] = "localhost"
+    # os.environ["MASTER_PORT"] = "5678"
+    # if args.launcher == "none":
+    #     opt["dist"] = False
+    #     print("Disable distributed.", flush=True)
+    # else:
+    #     opt["dist"] = True
+    #     if args.launcher == "slurm" and "dist_params" in opt:
+    #         init_dist(args.launcher, **opt["dist_params"])
+    #     else:
+    #         init_dist(args.launcher)
+    #         print("init dist .. ", args.launcher)
+    _init_dist_pytorch(backend="nccl")
 
     opt["rank"], opt["world_size"] = get_dist_info()
 
