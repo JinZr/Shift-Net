@@ -5,6 +5,7 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 import glob
+import json
 import os
 
 import imageio
@@ -18,15 +19,18 @@ from basicsr.data.transforms import augment, paired_random_crop, random_augmenta
 from basicsr.utils import FileClient, imfrombytes, img2tensor, padding
 
 
-class VideoImage2Dataset(data.Dataset):
+class VideoImageDataset(data.Dataset):
     def __init__(self, args):
         self.args = args
+        self.image_list = json.load(
+            open(
+                "/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
+                "r",
+            )
+        )
+
         self.name = args["name"]
         # self.train = train
-        self.n_seq = args["n_sequence"]
-        self.n_frames_per_video = args["n_frames_per_video"]
-        print("n_seq:", self.n_seq)
-        print("n_frames_per_video:", self.n_frames_per_video)
 
         self.n_frames_video = []
 
@@ -35,20 +39,25 @@ class VideoImage2Dataset(data.Dataset):
         # else:
         # self._set_filesystem(args.dir_data_test)
 
-        self.images_gt = self._scan()
+        self.images_gt, self.images_input = self._scan()
+
+        self.n_seq = len(self.image_list)
+        self.n_frames_per_video = min(self.n_frames_video)
+        print("n_seq:", self.n_seq)
+        print("n_frames_per_video:", self.n_frames_per_video)
 
         self.num_video = len(self.images_gt)
-        self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
-            self.n_frames_video
-        )
-        # print("Number of videos to load:", self.num_video)
-        # print("Number of frames to load:", self.num_frame)
+        # self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
+        #     self.n_frames_video
+        # )
+        self.num_frame = sum(self.n_frames_video)
+        print("Number of videos to load:", self.num_video)
+        print("Number of frames to load:", self.num_frame)
         self.n_colors = args["n_colors"]
         self.rgb_range = args["rgb_range"]
         self.patch_size = args["patch_size"]
         self.no_augment = args["no_augment"]
         self.size_must_mode = args["size_must_mode"]
-        # exit(0)
 
         # if train:
         #     self.repeat = max(args.test_every // max((self.num_frame // self.args.batch_size), 1), 1)
@@ -60,37 +69,28 @@ class VideoImage2Dataset(data.Dataset):
     def _set_filesystem(self, dir_data):
         print("Loading {} => {} DataSet".format("train", self.name))
         self.apath = dir_data
-        self.dir_gt = os.path.join(self.apath, "480p")
-        # self.dir_input = os.path.join(self.apath, 'blur')
+        self.dir_gt = os.path.join(self.apath, "gt")
+        self.dir_input = os.path.join(self.apath, "blur")
         print("DataSet GT path:", self.dir_gt)
-        # print("DataSet INPUT path:", self.dir_input)
+        print("DataSet INPUT path:", self.dir_input)
 
     def _scan(self):
-        vid_gt_names = sorted(glob.glob(os.path.join(self.dir_gt, "*")))
-        # vid_input_names = sorted(glob.glob(os.path.join(self.dir_input, '*')))
-        # assert len(vid_gt_names) == len(vid_input_names), "len(vid_gt_names) must equal len(vid_input_names)"
+        # vid_gt_names = sorted(glob.glob(os.path.join(self.dir_gt, "*")))
+        # vid_input_names = sorted(glob.glob(os.path.join(self.dir_input, "*")))
+        # assert len(vid_gt_names) == len(
+        #     vid_input_names
+        # ), "len(vid_gt_names) must equal len(vid_input_names)"
 
-        images_gt = []
-        # images_input = []
+        images_gt = [[obj["gt"] for obj in img_list] for img_list in self.image_list]
+        images_input = [
+            [obj["rain"] for obj in img_list] for img_list in self.image_list
+        ]
+        self.n_frames_video = [len(gt_list) for gt_list in images_gt]
 
-        for vid_gt_name in vid_gt_names:
-            # if self.train:
-            # print(vid_gt_name)
-            gt_dir_names = sorted(glob.glob(os.path.join(vid_gt_name, "*")))[
-                : self.n_frames_per_video
-            ]
-            # input_dir_names = sorted(glob.glob(os.path.join(vid_input_name, '*')))[:self.n_frames_per_video]
-            # else:
-            #    gt_dir_names = sorted(glob.glob(os.path.join(vid_gt_name, '*')))
-            #     input_dir_names = sorted(glob.glob(os.path.join(vid_input_name, '*')))
-            images_gt.append(gt_dir_names)
-            # images_input.append(input_dir_names)
-            self.n_frames_video.append(len(gt_dir_names))
+        return images_gt, images_input
 
-        return images_gt  # , images_input
-
-    def _load(self, images_gt):
-        # data_input = []
+    def _load(self, images_gt, images_input):
+        data_input = []
         data_gt = []
 
         n_videos = len(images_gt)
@@ -98,36 +98,46 @@ class VideoImage2Dataset(data.Dataset):
             if idx % 10 == 0:
                 print("Loading video %d" % idx)
             gts = np.array([imageio.imread(hr_name) for hr_name in images_gt[idx]])
-            # inputs = np.array([imageio.imread(lr_name) for lr_name in images_input[idx]])
-            # data_input.append(inputs)
+            inputs = np.array(
+                [imageio.imread(lr_name) for lr_name in images_input[idx]]
+            )
+            data_input.append(inputs)
             data_gt.append(gts)
 
-        return data_gt  # , data_input
+        return data_gt, data_input
 
     def __getitem__(self, idx):
         # if self.args.process:
         #     inputs, gts, filenames = self._load_file_from_loaded_data(idx)
         # else:
-        gts, filenames = self._load_file(idx)
+        inputs, gts, filenames = self._load_file(idx)
+        print(inputs.shape, gts.shape)
 
         # inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq)]
-        # inputs_concat = np.concatenate(inputs_list, axis=2)
-        gts_list = [gts[i, :, :, :] for i in range(self.n_seq)]
+        inputs_list = [inputs[i, :, :, :] for i in range(inputs.shape[0])]
+        inputs_concat = np.concatenate(inputs_list, axis=2)
+        gts_list = [gts[i, :, :, :] for i in range(gts.shape[0])]
         gts_concat = np.concatenate(gts_list, axis=2)
-
-        gts_concat, _ = self.get_patch(gts_concat, gts_concat, self.size_must_mode)
-        # inputs_list = [inputs_concat[:, :, i*self.n_colors:(i+1)*self.n_colors] for i in range(self.n_seq)]
+        inputs_concat, gts_concat = self.get_patch(
+            inputs_concat, gts_concat, self.size_must_mode
+        )
+        inputs_list = [
+            inputs_concat[:, :, i * self.n_colors : (i + 1) * self.n_colors]
+            for i in range(self.n_seq)
+        ]
         gts_list = [
             gts_concat[:, :, i * self.n_colors : (i + 1) * self.n_colors]
             for i in range(self.n_seq)
         ]
-        # inputs = np.array(inputs_list)
+        inputs = np.array(inputs_list)
         gts = np.array(gts_list)
 
-        # input_tensors = np2Tensor(*inputs, rgb_range=self.rgb_range, n_colors=self.n_colors)
+        input_tensors = np2Tensor(
+            *inputs, rgb_range=self.rgb_range, n_colors=self.n_colors
+        )
         gt_tensors = np2Tensor(*gts, rgb_range=self.rgb_range, n_colors=self.n_colors)
 
-        return torch.stack(gt_tensors), filenames
+        return torch.stack(input_tensors), torch.stack(gt_tensors), filenames
 
     def __len__(self):
         return self.num_frame
@@ -148,12 +158,12 @@ class VideoImage2Dataset(data.Dataset):
     def _load_file(self, idx):
         idx = self._get_index(idx)
 
-        n_poss_frames = [n - self.n_seq + 1 for n in self.n_frames_video]
+        n_poss_frames = [n + 1 for n in self.n_frames_video]
         video_idx, frame_idx = self._find_video_num(idx, n_poss_frames)
         f_gts = self.images_gt[video_idx][frame_idx : frame_idx + self.n_seq]
-        # f_inputs = self.images_input[video_idx][frame_idx:frame_idx + self.n_seq]
+        f_inputs = self.images_input[video_idx][frame_idx : frame_idx + self.n_seq]
         gts = np.array([imageio.imread(hr_name) for hr_name in f_gts])
-        # inputs = np.array([imageio.imread(lr_name) for lr_name in f_inputs])
+        inputs = np.array([imageio.imread(lr_name) for lr_name in f_inputs])
         filenames = [
             os.path.split(os.path.dirname(name))[-1]
             + "."
@@ -161,7 +171,7 @@ class VideoImage2Dataset(data.Dataset):
             for name in f_gts
         ]
 
-        return gts, filenames
+        return inputs, gts, filenames
 
     def _load_file_from_loaded_data(self, idx):
         idx = self._get_index(idx)

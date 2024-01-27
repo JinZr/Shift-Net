@@ -28,9 +28,12 @@ class VideoImageDataset(data.Dataset):
                 "r",
             )
         )
-
         self.name = args["name"]
         # self.train = train
+        self.n_seq = args["n_sequence"]
+        self.n_frames_per_video = args["n_frames_per_video"]
+        print("n_seq:", self.n_seq)
+        print("n_frames_per_video:", self.n_frames_per_video)
 
         self.n_frames_video = []
 
@@ -41,16 +44,10 @@ class VideoImageDataset(data.Dataset):
 
         self.images_gt, self.images_input = self._scan()
 
-        self.n_seq = len(self.image_list)
-        self.n_frames_per_video = min(self.n_frames_video)
-        print("n_seq:", self.n_seq)
-        print("n_frames_per_video:", self.n_frames_per_video)
-
         self.num_video = len(self.images_gt)
-        # self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
-        #     self.n_frames_video
-        # )
-        self.num_frame = sum(self.n_frames_video)
+        self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
+            self.n_frames_video
+        )
         print("Number of videos to load:", self.num_video)
         print("Number of frames to load:", self.num_frame)
         self.n_colors = args["n_colors"]
@@ -75,18 +72,11 @@ class VideoImageDataset(data.Dataset):
         print("DataSet INPUT path:", self.dir_input)
 
     def _scan(self):
-        # vid_gt_names = sorted(glob.glob(os.path.join(self.dir_gt, "*")))
-        # vid_input_names = sorted(glob.glob(os.path.join(self.dir_input, "*")))
-        # assert len(vid_gt_names) == len(
-        #     vid_input_names
-        # ), "len(vid_gt_names) must equal len(vid_input_names)"
-
         images_gt = [[obj["gt"] for obj in img_list] for img_list in self.image_list]
         images_input = [
             [obj["rain"] for obj in img_list] for img_list in self.image_list
         ]
         self.n_frames_video = [len(gt_list) for gt_list in images_gt]
-
         return images_gt, images_input
 
     def _load(self, images_gt, images_input):
@@ -111,12 +101,10 @@ class VideoImageDataset(data.Dataset):
         #     inputs, gts, filenames = self._load_file_from_loaded_data(idx)
         # else:
         inputs, gts, filenames = self._load_file(idx)
-        print(inputs.shape, gts.shape)
 
-        # inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq)]
-        inputs_list = [inputs[i, :, :, :] for i in range(inputs.shape[0])]
+        inputs_list = [inputs[i, :, :, :] for i in range(self.n_seq)]
         inputs_concat = np.concatenate(inputs_list, axis=2)
-        gts_list = [gts[i, :, :, :] for i in range(gts.shape[0])]
+        gts_list = [gts[i, :, :, :] for i in range(self.n_seq)]
         gts_concat = np.concatenate(gts_list, axis=2)
         inputs_concat, gts_concat = self.get_patch(
             inputs_concat, gts_concat, self.size_must_mode
@@ -158,7 +146,7 @@ class VideoImageDataset(data.Dataset):
     def _load_file(self, idx):
         idx = self._get_index(idx)
 
-        n_poss_frames = [n + 1 for n in self.n_frames_video]
+        n_poss_frames = [n - self.n_seq + 1 for n in self.n_frames_video]
         video_idx, frame_idx = self._find_video_num(idx, n_poss_frames)
         f_gts = self.images_gt[video_idx][frame_idx : frame_idx + self.n_seq]
         f_inputs = self.images_input[video_idx][frame_idx : frame_idx + self.n_seq]
