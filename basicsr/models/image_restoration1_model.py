@@ -5,59 +5,62 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 import importlib
-import torch
 from collections import OrderedDict
 from copy import deepcopy
+from importlib import import_module
 from os import path as osp
-from tqdm import tqdm
+
+import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
+from tqdm import tqdm
+
+import basicsr.loss as loss
 
 # from basicsr.models.archs import define_network
 from basicsr.models.base_model import BaseModel
 from basicsr.utils import get_root_logger, imwrite, tensor2img
-from importlib import import_module
 
-import basicsr.loss as loss
 
 def create_video_model(opt):
-    module = import_module('basicsr.models.archs.' + opt['model'].lower())
+    module = import_module("basicsr.models.archs." + opt["model"].lower())
     model = module.make_model(opt)
     return model
 
-loss_module = importlib.import_module('basicsr.models.losses')
-metric_module = importlib.import_module('basicsr.metrics')
+
+loss_module = importlib.import_module("basicsr.models.losses")
+metric_module = importlib.import_module("basicsr.metrics")
 
 
-
-def generate_kernels(h=11,l=80,n=10):
-    kernels = torch.zeros(l,1,h,h).to(torch.device('cuda'))
-    n2 = (n-1)//2
-    n1 = n-2*n2
-    kernels[0*n2:1*n2,:,0,0] = 1
-    kernels[1*n2:2*n2,:,0,h//4] = 1
-    kernels[2*n2:3*n2,:,0,h//2] = 1
-    kernels[3*n2:4*n2,:,0,3*h//4] = 1
-    kernels[4*n2:5*n2,:,0,h-1] = 1
-    kernels[5*n2:6*n2,:,h-1,0] = 1
-    kernels[6*n2:7*n2,:,h-1,h//4] = 1
-    kernels[7*n2:8*n2,:,h-1,h//2] = 1
-    kernels[8*n2:9*n2,:,h-1,3*h//4] = 1
-    kernels[9*n2:10*n2,:,h-1,h-1] = 1
-    kernels[10*n2:11*n2,:,h//4,0] = 1
-    kernels[11*n2:12*n2,:,h//4,h-1] = 1
-    kernels[12*n2:13*n2,:,h//2,0] = 1
-    kernels[13*n2:14*n2,:,h//2,h-1] = 1
-    kernels[14*n2:15*n2,:,3*h//4,0] = 1
-    kernels[15*n2:16*n2,:,3*h//4,h-1] = 1
-    kernels[16*n2+0*n1:16*n2+1*n1,:,h//4,h//4] = 1
-    kernels[16*n2+1*n1:16*n2+2*n1,:,h//4,h//2] = 1
-    kernels[16*n2+2*n1:16*n2+3*n1,:,h//4,3*h//4] = 1 
-    kernels[16*n2+3*n1:16*n2+4*n1,:,h//2,h//4] = 1
-    kernels[16*n2+4*n1:16*n2+5*n1,:,h//2,3*h//4] = 1
-    kernels[16*n2+5*n1:16*n2+6*n1,:,3*h//4,h//4] = 1
-    kernels[16*n2+6*n1:16*n2+7*n1,:,3*h//4,h//2] = 1
-    kernels[16*n2+7*n1:16*n2+8*n1,:,3*h//4,3*h//4] = 1
+def generate_kernels(h=11, l=80, n=10):
+    kernels = torch.zeros(l, 1, h, h).to(torch.device("cuda"))
+    n2 = (n - 1) // 2
+    n1 = n - 2 * n2
+    kernels[0 * n2 : 1 * n2, :, 0, 0] = 1
+    kernels[1 * n2 : 2 * n2, :, 0, h // 4] = 1
+    kernels[2 * n2 : 3 * n2, :, 0, h // 2] = 1
+    kernels[3 * n2 : 4 * n2, :, 0, 3 * h // 4] = 1
+    kernels[4 * n2 : 5 * n2, :, 0, h - 1] = 1
+    kernels[5 * n2 : 6 * n2, :, h - 1, 0] = 1
+    kernels[6 * n2 : 7 * n2, :, h - 1, h // 4] = 1
+    kernels[7 * n2 : 8 * n2, :, h - 1, h // 2] = 1
+    kernels[8 * n2 : 9 * n2, :, h - 1, 3 * h // 4] = 1
+    kernels[9 * n2 : 10 * n2, :, h - 1, h - 1] = 1
+    kernels[10 * n2 : 11 * n2, :, h // 4, 0] = 1
+    kernels[11 * n2 : 12 * n2, :, h // 4, h - 1] = 1
+    kernels[12 * n2 : 13 * n2, :, h // 2, 0] = 1
+    kernels[13 * n2 : 14 * n2, :, h // 2, h - 1] = 1
+    kernels[14 * n2 : 15 * n2, :, 3 * h // 4, 0] = 1
+    kernels[15 * n2 : 16 * n2, :, 3 * h // 4, h - 1] = 1
+    kernels[16 * n2 + 0 * n1 : 16 * n2 + 1 * n1, :, h // 4, h // 4] = 1
+    kernels[16 * n2 + 1 * n1 : 16 * n2 + 2 * n1, :, h // 4, h // 2] = 1
+    kernels[16 * n2 + 2 * n1 : 16 * n2 + 3 * n1, :, h // 4, 3 * h // 4] = 1
+    kernels[16 * n2 + 3 * n1 : 16 * n2 + 4 * n1, :, h // 2, h // 4] = 1
+    kernels[16 * n2 + 4 * n1 : 16 * n2 + 5 * n1, :, h // 2, 3 * h // 4] = 1
+    kernels[16 * n2 + 5 * n1 : 16 * n2 + 6 * n1, :, 3 * h // 4, h // 4] = 1
+    kernels[16 * n2 + 6 * n1 : 16 * n2 + 7 * n1, :, 3 * h // 4, h // 2] = 1
+    kernels[16 * n2 + 7 * n1 : 16 * n2 + 8 * n1, :, 3 * h // 4, 3 * h // 4] = 1
     return kernels
+
 
 class ImageRestorationModel1(BaseModel):
     """Base Deblur model for single image deblur."""
@@ -69,52 +72,59 @@ class ImageRestorationModel1(BaseModel):
         # print("define network")
         # exit(0)
         # self.kernel1 = generate_kernels(h=5,l=40, n=5)
-        #self.kernel2 = generate_kernels(h=5,l=56, n=7)
+        # self.kernel2 = generate_kernels(h=5,l=56, n=7)
         # self.kernel3 = generate_kernels(h=5,l=80, n=10)
-        self.net_g = create_video_model(opt) #define_network(deepcopy(opt['network_g']))
+        self.net_g = create_video_model(
+            opt
+        )  # define_network(deepcopy(opt['network_g']))
         self.net_g = self.model10_to_device(self.net_g)
-        self.n_sequence = opt['n_sequence']
+        self.n_sequence = opt["n_sequence"]
         print("define network cdvd_tsp")
         self.print_network(self.net_g)
 
         # load pretrained models
-        load_path = self.opt['path'].get('pretrain_network_g', None)
+        load_path = self.opt["path"].get("pretrain_network_g", None)
         if load_path is not None:
-            self.load_network(self.net_g, load_path,
-                              self.opt['path'].get('strict_load_g', True), param_key=self.opt['path'].get('param_key', 'params'))
+            self.load_network(
+                self.net_g,
+                load_path,
+                self.opt["path"].get("strict_load_g", True),
+                param_key=self.opt["path"].get("param_key", "params"),
+            )
 
         if self.is_train:
             self.init_training_settings()
-        self.loss = loss.Loss2(opt['loss_type'])
+        self.loss = loss.Loss2(opt["loss_type"])
         self.scaler = torch.cuda.amp.GradScaler()
 
     def init_training_settings(self):
         self.net_g.train()
-        train_opt = self.opt['train']
+        train_opt = self.opt["train"]
 
         # define losses
-        if train_opt.get('pixel_opt'):
-            pixel_type = train_opt['pixel_opt'].pop('type')
+        if train_opt.get("pixel_opt"):
+            pixel_type = train_opt["pixel_opt"].pop("type")
             cri_pix_cls = getattr(loss_module, pixel_type)
-            self.cri_pix = cri_pix_cls(**train_opt['pixel_opt']).to(
-                self.device)
+            self.cri_pix = cri_pix_cls(**train_opt["pixel_opt"]).to(self.device)
         else:
             self.cri_pix = None
 
-        if train_opt.get('perceptual_opt'):
-            percep_type = train_opt['perceptual_opt'].pop('type')
+        if train_opt.get("perceptual_opt"):
+            percep_type = train_opt["perceptual_opt"].pop("type")
             cri_perceptual_cls = getattr(loss_module, percep_type)
-            self.cri_perceptual = cri_perceptual_cls(
-                **train_opt['perceptual_opt']).to(self.device)
+            self.cri_perceptual = cri_perceptual_cls(**train_opt["perceptual_opt"]).to(
+                self.device
+            )
         else:
             self.cri_perceptual = None
 
         if self.cri_pix is None and self.cri_perceptual is None:
-            raise ValueError('Both pixel and perceptual losses are None.')
+            raise ValueError("Both pixel and perceptual losses are None.")
 
         # set up optimizers and schedulers
         self.setup_optimizers()
         self.setup_schedulers()
+
     def model10_to_device(self, net):
         """Model to device. It also warps models with DistributedDataParallel
         or DataParallel.
@@ -124,53 +134,59 @@ class ImageRestorationModel1(BaseModel):
         """
 
         net = net.to(self.device)
-        if self.opt['dist']:
-            #find_unused_parameters = self.opt.get('find_unused_parameters',
+        if self.opt["dist"]:
+            # find_unused_parameters = self.opt.get('find_unused_parameters',
             #                                      )
             net = DistributedDataParallel(
                 net,
                 device_ids=[torch.cuda.current_device()],
-                find_unused_parameters=False)
-            #outputs, _ = net(torch.zeros(1,6,3,64,64).cuda(), self.kernel1, self.kernel2, self.kernel3)
-            #outputs[0].sum().backward()
-            #for n, p in net.named_parameters():
+                find_unused_parameters=False,
+            )
+            # outputs, _ = net(torch.zeros(1,6,3,64,64).cuda(), self.kernel1, self.kernel2, self.kernel3)
+            # outputs[0].sum().backward()
+            # for n, p in net.named_parameters():
             #    if p.grad is None and p.requires_grad is True:
             #        print('Params not used', n, p.shape)
             # exit(0)
-        elif self.opt['num_gpu'] > 1:
+        elif self.opt["num_gpu"] > 1:
             net = DataParallel(net)
         return net
 
     def setup_optimizers(self):
-        train_opt = self.opt['train']
+        train_opt = self.opt["train"]
         optim_params = []
         optim_params_lowlr = []
 
-
-
         for k, v in self.net_g.named_parameters():
             if v.requires_grad:
-                if k.startswith('module.spynet') or k.startswith('module.dcns'):
+                if k.startswith("module.spynet") or k.startswith("module.dcns"):
                     optim_params_lowlr.append(v)
                     print("lower lr", k)
                 else:
                     optim_params.append(v)
             else:
                 logger = get_root_logger()
-                logger.warning(f'Params {k} will not be optimized.')
+                logger.warning(f"Params {k} will not be optimized.")
         # print(optim_params)
         ratio = 0.1
 
-        optim_type = train_opt['optim_g'].pop('type')
-        if optim_type == 'Adam':
-            self.optimizer_g = torch.optim.AdamW([{'params': optim_params}, {'params': optim_params_lowlr, 'lr': train_opt['optim_g']['lr'] * ratio}],
-                                                **train_opt['optim_g'])
+        optim_type = train_opt["optim_g"].pop("type")
+        if optim_type == "Adam":
+            self.optimizer_g = torch.optim.AdamW(
+                [
+                    {"params": optim_params},
+                    {
+                        "params": optim_params_lowlr,
+                        "lr": train_opt["optim_g"]["lr"] * ratio,
+                    },
+                ],
+                **train_opt["optim_g"],
+            )
         # elif optim_type == 'SGD':
         #     self.optimizer_g = torch.optim.SGD(optim_params,
         #                                        **train_opt['optim_g'])
         else:
-            raise NotImplementedError(
-                f'optimizer {optim_type} is not supperted yet.')
+            raise NotImplementedError(f"optimizer {optim_type} is not supperted yet.")
         self.optimizers.append(self.optimizer_g)
         # print(self.optimizer_g)
         # exit(0)
@@ -189,7 +205,6 @@ class ImageRestorationModel1(BaseModel):
         # exit()
         # self.gt_0 = torch.cat([gt_list[0],gt_list[1], gt_list[2], gt_list[3], gt_list[4]], dim=1).to(self.device)
         # self.gt_1 = torch.cat([gt_list[1], gt_list[2], gt_list[3]], dim=1).to(self.device)
-        
 
     def transpose(self, t, trans_idx):
         # print('transpose jt .. ', t.size())
@@ -204,12 +219,11 @@ class ImageRestorationModel1(BaseModel):
             t = torch.flip(t, [3])
         return t
 
-
     def grids(self):
         b, c, h, w = self.lq.size()
         self.original_size = self.lq.size()
         assert b == 1
-        crop_size = self.opt['val'].get('crop_size')
+        crop_size = self.opt["val"].get("crop_size")
         # step_j = self.opt['val'].get('step_j', crop_size)
         # step_i = self.opt['val'].get('step_i', crop_size)
         ##adaptive step_i, step_j
@@ -217,13 +231,20 @@ class ImageRestorationModel1(BaseModel):
         num_col = (w - 1) // crop_size + 1
 
         import math
-        step_j = crop_size if num_col == 1 else math.ceil((w - crop_size) / (num_col - 1) - 1e-8)
-        step_i = crop_size if num_row == 1 else math.ceil((h - crop_size) / (num_row - 1) - 1e-8)
 
+        step_j = (
+            crop_size
+            if num_col == 1
+            else math.ceil((w - crop_size) / (num_col - 1) - 1e-8)
+        )
+        step_i = (
+            crop_size
+            if num_row == 1
+            else math.ceil((h - crop_size) / (num_row - 1) - 1e-8)
+        )
 
         # print('step_i, stepj', step_i, step_j)
         # exit(0)
-
 
         parts = []
         idxes = []
@@ -238,7 +259,6 @@ class ImageRestorationModel1(BaseModel):
                 i = h - crop_size
                 last_i = True
 
-
             last_j = False
             while j < w and not last_j:
                 if j + crop_size >= w:
@@ -246,21 +266,30 @@ class ImageRestorationModel1(BaseModel):
                     last_j = True
                 # from i, j to i+crop_szie, j + crop_size
                 # print(' trans 8')
-                for trans_idx in range(self.opt['val'].get('trans_num', 1)):
-                    parts.append(self.transpose(self.lq[:, :, i:i + crop_size, j:j + crop_size], trans_idx))
-                    idxes.append({'i': i, 'j': j, 'trans_idx': trans_idx})
+                for trans_idx in range(self.opt["val"].get("trans_num", 1)):
+                    parts.append(
+                        self.transpose(
+                            self.lq[:, :, i : i + crop_size, j : j + crop_size],
+                            trans_idx,
+                        )
+                    )
+                    idxes.append({"i": i, "j": j, "trans_idx": trans_idx})
                     # cnt_idx += 1
                 j = j + step_j
             i = i + step_i
-        if self.opt['val'].get('random_crop_num', 0) > 0:
-            for _ in range(self.opt['val'].get('random_crop_num')):
+        if self.opt["val"].get("random_crop_num", 0) > 0:
+            for _ in range(self.opt["val"].get("random_crop_num")):
                 import random
-                i = random.randint(0, h-crop_size)
-                j = random.randint(0, w-crop_size)
-                trans_idx = random.randint(0, self.opt['val'].get('trans_num', 1) - 1)
-                parts.append(self.transpose(self.lq[:, :, i:i + crop_size, j:j + crop_size], trans_idx))
-                idxes.append({'i': i, 'j': j, 'trans_idx': trans_idx})
 
+                i = random.randint(0, h - crop_size)
+                j = random.randint(0, w - crop_size)
+                trans_idx = random.randint(0, self.opt["val"].get("trans_num", 1) - 1)
+                parts.append(
+                    self.transpose(
+                        self.lq[:, :, i : i + crop_size, j : j + crop_size], trans_idx
+                    )
+                )
+                idxes.append({"i": i, "j": j, "trans_idx": trans_idx})
 
         self.origin_lq = self.lq
         self.lq = torch.cat(parts, dim=0)
@@ -272,22 +301,23 @@ class ImageRestorationModel1(BaseModel):
         b, c, h, w = self.original_size
 
         count_mt = torch.zeros((b, 1, h, w)).to(self.device)
-        crop_size = self.opt['val'].get('crop_size')
+        crop_size = self.opt["val"].get("crop_size")
 
         for cnt, each_idx in enumerate(self.idxes):
-            i = each_idx['i']
-            j = each_idx['j']
-            trans_idx = each_idx['trans_idx']
-            preds[0, :, i:i + crop_size, j:j + crop_size] += self.transpose_inverse(self.output[cnt, :, :, :].unsqueeze(0), trans_idx).squeeze(0)
-            count_mt[0, 0, i:i + crop_size, j:j + crop_size] += 1.
+            i = each_idx["i"]
+            j = each_idx["j"]
+            trans_idx = each_idx["trans_idx"]
+            preds[0, :, i : i + crop_size, j : j + crop_size] += self.transpose_inverse(
+                self.output[cnt, :, :, :].unsqueeze(0), trans_idx
+            ).squeeze(0)
+            count_mt[0, 0, i : i + crop_size, j : j + crop_size] += 1.0
 
         self.output = preds / count_mt
         self.lq = self.origin_lq
 
-
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        #print(self.lq.shape, self.gt.shape)
+        # print(self.lq.shape, self.gt.shape)
         with torch.cuda.amp.autocast():
             output = self.net_g(self.lq)
             # print(self.lq.shape, output.shape, output_1.shape, self.gt_1.shape, self.gt.shape)
@@ -297,8 +327,10 @@ class ImageRestorationModel1(BaseModel):
             # l_total = 0
             loss_dict = OrderedDict()
             # pixel loss
-            l_pix = self.loss(output, self.gt) # + 0.5 * self.loss(out1, self.gt_1) + 0.5 * self.loss(out2, self.gt_1)
-            loss_dict['l_pix'] = l_pix
+            l_pix = self.loss(
+                output, self.gt
+            )  # + 0.5 * self.loss(out1, self.gt_1) + 0.5 * self.loss(out2, self.gt_1)
+            loss_dict["l_pix"] = l_pix
             # mid_loss = self.loss(output_1, self.gt_1)
             # l_total = l_pix + mid_loss
 
@@ -307,14 +339,13 @@ class ImageRestorationModel1(BaseModel):
         # l_total.backward()
         self.scaler.scale(l_total).backward()
         # use_grad_clip = self.opt['train'].get('use_grad_clip', True)
-        #if use_grad_clip:
+        # if use_grad_clip:
         #      torch.nn.utils.clip_grad_norm_(self.net_g.parameters(), 0.01)
         # self.optimizer_g.step()
         self.scaler.unscale_(self.optimizer_g)
         torch.nn.utils.clip_grad_norm_(self.net_g.parameters(), 0.01)
         self.scaler.step(self.optimizer_g)
         self.scaler.update()
-
 
         self.log_dict = self.reduce_loss_dict(loss_dict)
         # exit(0)
@@ -324,7 +355,7 @@ class ImageRestorationModel1(BaseModel):
         with torch.no_grad():
             n = self.lq.size(0)
             outs = []
-            m = self.opt['val'].get('max_minibatch', n)
+            m = self.opt["val"].get("max_minibatch", n)
             i = 0
             while i < n:
                 j = i + m
@@ -339,65 +370,71 @@ class ImageRestorationModel1(BaseModel):
 
             self.output = torch.cat(outs, dim=0)
         self.net_g.train()
+
     def get_latest_images(self):
         return [self.lq[0].float(), self.gt[0].float(), self.output[0].float()]
 
     def single_image_inference(self, img, save_path):
-        self.feed_data(data={'lq': img.unsqueeze(dim=0)})
+        self.feed_data(data={"lq": img.unsqueeze(dim=0)})
 
-        if self.opt['val'].get('grids', False):
+        if self.opt["val"].get("grids", False):
             self.grids()
 
         self.test()
 
-        if self.opt['val'].get('grids', False):
+        if self.opt["val"].get("grids", False):
             self.grids_inverse()
 
         visuals = self.get_current_visuals()
-        sr_img = tensor2img([visuals['result']])
+        sr_img = tensor2img([visuals["result"]])
         imwrite(sr_img, save_path)
 
-    def dist_validation(self, dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image):
+    def dist_validation(
+        self, dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image
+    ):
         logger = get_root_logger()
         # logger.info('Only support single GPU validation.')
         import os
-        if os.environ['LOCAL_RANK'] == '0':
-            return self.nondist_validation(dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image)
-        else:
-            return 0.
 
-    def nondist_validation(self, dataloader, current_iter, tb_logger,
-                           save_img, rgb2bgr, use_image):
-        dataset_name = dataloader.dataset.opt['name']
-        with_metrics = self.opt['val'].get('metrics') is not None
+        if os.environ["LOCAL_RANK"] == "0":
+            return self.nondist_validation(
+                dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image
+            )
+        else:
+            return 0.0
+
+    def nondist_validation(
+        self, dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image
+    ):
+        dataset_name = dataloader.dataset.opt["name"]
+        with_metrics = self.opt["val"].get("metrics") is not None
         if with_metrics:
             self.metric_results = {
-                metric: 0
-                for metric in self.opt['val']['metrics'].keys()
+                metric: 0 for metric in self.opt["val"]["metrics"].keys()
             }
-        pbar = tqdm(total=len(dataloader), unit='image')
+        pbar = tqdm(total=len(dataloader), unit="image")
 
         cnt = 0
 
         for idx, val_data in enumerate(dataloader):
-            img_name = osp.splitext(osp.basename(val_data['lq_path'][0]))[0]
+            img_name = osp.splitext(osp.basename(val_data["lq_path"][0]))[0]
             # if img_name[-1] != '9':
             #     continue
 
             # print('val_data .. ', val_data['lq'].size(), val_data['gt'].size())
             self.feed_data(val_data)
-            if self.opt['val'].get('grids', False):
+            if self.opt["val"].get("grids", False):
                 self.grids()
 
             self.test()
 
-            if self.opt['val'].get('grids', False):
+            if self.opt["val"].get("grids", False):
                 self.grids_inverse()
 
             visuals = self.get_current_visuals()
-            sr_img = tensor2img([visuals['result']], rgb2bgr=rgb2bgr)
-            if 'gt' in visuals:
-                gt_img = tensor2img([visuals['gt']], rgb2bgr=rgb2bgr)
+            sr_img = tensor2img([visuals["result"]], rgb2bgr=rgb2bgr)
+            if "gt" in visuals:
+                gt_img = tensor2img([visuals["gt"]], rgb2bgr=rgb2bgr)
                 del self.gt
 
             # tentative for out of GPU memory
@@ -406,79 +443,83 @@ class ImageRestorationModel1(BaseModel):
             torch.cuda.empty_cache()
 
             if save_img:
-                
-                if self.opt['is_train']:
-                    
-                    save_img_path = osp.join(self.opt['path']['visualization'],
-                                             img_name,
-                                             f'{img_name}_{current_iter}.png')
-                    
-                    save_gt_img_path = osp.join(self.opt['path']['visualization'],
-                                             img_name,
-                                             f'{img_name}_{current_iter}_gt.png')
-                else:
-                    
+                if self.opt["is_train"]:
                     save_img_path = osp.join(
-                        self.opt['path']['visualization'], dataset_name,
-                        f'{img_name}.png')
+                        self.opt["path"]["visualization"],
+                        img_name,
+                        f"{img_name}_{current_iter}.png",
+                    )
+
                     save_gt_img_path = osp.join(
-                        self.opt['path']['visualization'], dataset_name,
-                        f'{img_name}_gt.png')
-                    
+                        self.opt["path"]["visualization"],
+                        img_name,
+                        f"{img_name}_{current_iter}_gt.png",
+                    )
+                else:
+                    save_img_path = osp.join(
+                        self.opt["path"]["visualization"],
+                        dataset_name,
+                        f"{img_name}.png",
+                    )
+                    save_gt_img_path = osp.join(
+                        self.opt["path"]["visualization"],
+                        dataset_name,
+                        f"{img_name}_gt.png",
+                    )
+
                 imwrite(sr_img, save_img_path)
                 imwrite(gt_img, save_gt_img_path)
 
             if with_metrics:
                 # calculate metrics
-                opt_metric = deepcopy(self.opt['val']['metrics'])
+                opt_metric = deepcopy(self.opt["val"]["metrics"])
                 if use_image:
                     for name, opt_ in opt_metric.items():
-                        metric_type = opt_.pop('type')
+                        metric_type = opt_.pop("type")
                         self.metric_results[name] += getattr(
-                            metric_module, metric_type)(sr_img, gt_img, **opt_)
+                            metric_module, metric_type
+                        )(sr_img, gt_img, **opt_)
                 else:
                     for name, opt_ in opt_metric.items():
-                        metric_type = opt_.pop('type')
+                        metric_type = opt_.pop("type")
                         self.metric_results[name] += getattr(
-                            metric_module, metric_type)(visuals['result'], visuals['gt'], **opt_)
+                            metric_module, metric_type
+                        )(visuals["result"], visuals["gt"], **opt_)
 
             pbar.update(1)
-            pbar.set_description(f'Test {img_name}')
+            pbar.set_description(f"Test {img_name}")
             cnt += 1
             # if cnt == 300:
             #     break
         pbar.close()
 
-        current_metric = 0.
+        current_metric = 0.0
         if with_metrics:
             for metric in self.metric_results.keys():
                 self.metric_results[metric] /= cnt
                 current_metric = self.metric_results[metric]
 
-            self._log_validation_metric_values(current_iter, dataset_name,
-                                               tb_logger)
+            self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
         return current_metric
 
-
-    def _log_validation_metric_values(self, current_iter, dataset_name,
-                                      tb_logger):
-        log_str = f'Validation {dataset_name},\t'
+    def _log_validation_metric_values(self, current_iter, dataset_name, tb_logger):
+        log_str = f"Validation {dataset_name},\t"
         for metric, value in self.metric_results.items():
-            log_str += f'\t # {metric}: {value:.4f}'
+            log_str += f"\t # {metric}: {value:.4f}"
         logger = get_root_logger()
         logger.info(log_str)
         if tb_logger:
             for metric, value in self.metric_results.items():
-                tb_logger.add_scalar(f'metrics/{metric}', value, current_iter)
+                tb_logger.add_scalar(f"metrics/{metric}", value, current_iter)
 
     def get_current_visuals(self):
         out_dict = OrderedDict()
-        out_dict['lq'] = self.lq.detach().cpu()
-        out_dict['result'] = self.output.detach().cpu()
-        if hasattr(self, 'gt'):
-            out_dict['gt'] = self.gt.detach().cpu()
+        out_dict["lq"] = self.lq.detach().cpu()
+        out_dict["result"] = self.output.detach().cpu()
+        if hasattr(self, "gt"):
+            out_dict["gt"] = self.gt.detach().cpu()
         return out_dict
 
     def save(self, epoch, current_iter):
-        self.save_network(self.net_g, 'net_g', current_iter)
+        self.save_network(self.net_g, "net_g", current_iter)
         self.save_training_state(epoch, current_iter)
