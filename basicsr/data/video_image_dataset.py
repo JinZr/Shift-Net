@@ -155,7 +155,7 @@ class VideoImageDataset(data.Dataset):
     def _load_file(self, idx):
         idx = self._get_index(idx)
 
-        n_poss_frames = [n - self.n_seq + 1 for n in self.n_frames_video]
+        n_poss_frames = [n + 1 for n in self.n_frames_video]
         video_idx, frame_idx = self._find_video_num(idx, n_poss_frames)
         f_gts = self.images_gt[video_idx][frame_idx : frame_idx + self.n_seq]
         f_inputs = self.images_input[video_idx][frame_idx : frame_idx + self.n_seq]
