@@ -113,14 +113,14 @@ def create_train_val_dataloader(opt, logger):
         if True:
             dataset_enlarge_ratio = 1  # dataset_opt.get('dataset_enlarge_ratio', 1)
             # print(opt)
-            train_set = VideoImageDataset(opt)
-            # train_set = NTU_dataset(
-            #     data_root="",
-            #     indexfile_path="/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
-            #     crop_size=512,
-            #     window_size=50,
-            #     transform=transforms.ToTensor(),
-            # )
+            # train_set = VideoImageDataset(opt)
+            train_set = NTU_dataset(
+                data_root="",
+                indexfile_path="/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
+                crop_size=256,
+                window_size=5,
+                transform=transforms.ToTensor(),
+            )
             train_sampler = EnlargedSampler(
                 train_set, opt["world_size"], opt["rank"], dataset_enlarge_ratio
             )
