@@ -62,6 +62,7 @@ def parse_options(is_train=True):
     import os
 
     os.environ["RANK"] = "0"
+    os.environ["WORLD_SIZE"] = "2"
     if args.launcher == "none":
         opt["dist"] = False
         print("Disable distributed.", flush=True)
