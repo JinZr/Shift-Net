@@ -59,6 +59,9 @@ def parse_options(is_train=True):
     opt = parse(args.opt, is_train=is_train)
 
     # distributed settings
+    import os
+
+    os.environ["RANK"] = "0"
     if args.launcher == "none":
         opt["dist"] = False
         print("Disable distributed.", flush=True)
