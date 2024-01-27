@@ -124,7 +124,7 @@ class NTU_dataset(Dataset):
             ip_tensors,
             gt_tensors,
             list(map(lambda x: x.split("/")[-2], ip_data)),
-            list(map(lambda x: x.split("/")[-1], ip_data)),
+            # list(map(lambda x: x.split("/")[-1], ip_data)),
         )
 
     def __len__(self):
