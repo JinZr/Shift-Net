@@ -63,7 +63,7 @@ def parse_options(is_train=True):
 
     os.environ["RANK"] = "0"
     os.environ["WORLD_SIZE"] = "2"
-    os.environ["MASTER_ADDR"] = "localhose"
+    os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "5678"
     if args.launcher == "none":
         opt["dist"] = False
