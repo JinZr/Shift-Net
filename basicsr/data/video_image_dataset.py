@@ -31,10 +31,6 @@ class VideoImageDataset(data.Dataset):
 
         self.name = args["name"]
         # self.train = train
-        self.n_seq = len(self.image_list)
-        self.n_frames_per_video = args["n_frames_per_video"]
-        print("n_seq:", self.n_seq)
-        print("n_frames_per_video:", self.n_frames_per_video)
 
         self.n_frames_video = []
 
@@ -44,6 +40,11 @@ class VideoImageDataset(data.Dataset):
         # self._set_filesystem(args.dir_data_test)
 
         self.images_gt, self.images_input = self._scan()
+
+        self.n_seq = len(self.image_list)
+        self.n_frames_per_video = min(self.n_frames_video)
+        print("n_seq:", self.n_seq)
+        print("n_frames_per_video:", self.n_frames_per_video)
 
         self.num_video = len(self.images_gt)
         # self.num_frame = sum(self.n_frames_video) - (self.n_seq - 1) * len(
