@@ -24,7 +24,7 @@ class VideoImageDataset(data.Dataset):
         self.args = args
         self.image_list = json.load(
             open(
-                "/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/static.json",
+                "/home/desc/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/all.json",
                 "r",
             )
         )
@@ -87,10 +87,18 @@ class VideoImageDataset(data.Dataset):
         for idx in range(n_videos):
             if idx % 10 == 0:
                 print("Loading video %d" % idx)
-            gts = np.array([imageio.imread(hr_name) for hr_name in images_gt[idx]])
-            inputs = np.array(
-                [imageio.imread(lr_name) for lr_name in images_input[idx]]
-            )
+
+            gts_list = []
+            inputs_list = []
+            for hr_name, lr_name in zip(images_gt[idx], images_input[idx]):
+                if "motion" not in hr_name:
+                    gts_list.append(imageio.imread(hr_name))
+                    inputs_list.append(imageio.imread(lr_name))
+                else:
+                    gts_list.append(imageio.imread(hr_name)[:, 3840:5760, :])
+                    inputs_list.append(imageio.imread(lr_name)[:, 3840:5760, :])
+            gts = np.array(gts_list)
+            inputs = np.array(inputs_list)
             data_input.append(inputs)
             data_gt.append(gts)
 
