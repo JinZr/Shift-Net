@@ -10,7 +10,7 @@ model_type: ImageRestorationModel1
 scale: 1
 num_gpu: 2
 manual_seed: 10
-n_sequence: 2
+n_sequence: 3
 n_frames_per_video: 100
 dir_data: ./dataset/GoPro/train/
 n_colors: 3
@@ -39,7 +39,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 2
-    batch_size_per_gpu: 1
+    batch_size_per_gpu: 2
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
