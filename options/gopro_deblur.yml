@@ -16,7 +16,7 @@ dir_data: ./dataset/GoPro/train/
 n_colors: 3
 rgb_range: 1
 no_augment: False
-loss_type: 1*L1
+loss_type: 1*L1+1*MSE
 patch_size: 256
 size_must_mode: 4
 model: gshift_deblur1
