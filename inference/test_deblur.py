@@ -71,7 +71,11 @@ class Inference:
 
         # self.input_path = os.path.join(self.data_path, "blur")
         # self.GT_path = os.path.join(self.data_path, "gt")
-        self.data_list = json.load(open("test.json"))
+        self.data_list = json.load(
+            open(
+                "/data/projects/derain/cu_video_derain/for_comparison/2021/Enhanced-Spatio-Temporal-Interaction-Learning-for-Video-Deraining/light.json"
+            )
+        )
 
         now_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         self.logger = Traverse_Logger(
