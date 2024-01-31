@@ -101,12 +101,12 @@ class Inference:
 
     def infer(self):
         with torch.no_grad():
-            total_psnr = {}
-            total_ssim = {}
+            total_psnr = []
+            total_ssim = []
             videos = self.data_list
             # print(len(videos))
             # exit(0)
-            for v in videos:
+            for v_index, v in enumerate(videos):
                 video_psnr = []
                 video_ssim = []
                 input_frames = [obj["rain"] for obj in v]
@@ -171,8 +171,8 @@ class Inference:
                         # print(psnr)
                         video_psnr.append(psnr)
                         video_ssim.append(ssim)
-                        total_psnr[v] = video_psnr
-                        total_ssim[v] = video_ssim
+                        total_psnr.append(video_psnr)
+                        total_ssim.append(video_ssim)
                         if self.save_image:
                             if not os.path.exists(os.path.join(self.result_path, v)):
                                 os.mkdir(os.path.join(self.result_path, v))
