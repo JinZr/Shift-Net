@@ -60,7 +60,7 @@ class Inference:
         self.model_path = "./experiments/GOPRO_deblur_experiment/models/net_g_40000.pth"
         self.data_path = args.data_path
         self.result_path = "./light/"
-        self.n_seq = 5
+        self.n_seq = 2
         self.size_must_mode = 4
         self.device = "cuda"
         self.one_len = args.one_len
