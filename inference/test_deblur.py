@@ -187,9 +187,7 @@ class Inference:
                     torch.cuda.empty_cache()
 
                     self.logger.write_log(
-                        "> {}-{} PSNR={:.5}, SSIM={:.4} pre_time:{:.3}s, forward_time:{:.3}s, post_time:{:.3}s, total_time:{:.3}s".format(
-                            v,
-                            filename,
+                        "> PSNR={:.5}, SSIM={:.4} pre_time:{:.3}s, forward_time:{:.3}s, post_time:{:.3}s, total_time:{:.3}s".format(
                             psnr,
                             ssim,
                             preprocess_time - start_time,
@@ -203,20 +201,20 @@ class Inference:
             sum_psnr = 0.0
             sum_ssim = 0.0
             n_img = 0
-            for k in total_psnr.keys():
-                self.logger.write_log(
-                    "# Video:{} AVG-PSNR={:.5}, AVG-SSIM={:.4}".format(
-                        k,
-                        sum(total_psnr[k]) / len(total_psnr[k]),
-                        sum(total_ssim[k]) / len(total_ssim[k]),
-                    )
-                )
-                sum_psnr += sum(total_psnr[k])
-                sum_ssim += sum(total_ssim[k])
-                n_img += len(total_psnr[k])
+            # for k in total_psnr:
+            #     self.logger.write_log(
+            #         "# Video:{} AVG-PSNR={:.5}, AVG-SSIM={:.4}".format(
+            #             k,
+            #             sum(total_psnr[k]) / len(total_psnr[k]),
+            #             sum(total_ssim[k]) / len(total_ssim[k]),
+            #         )
+            #     )
+            #     sum_psnr += sum(total_psnr[k])
+            #     sum_ssim += sum(total_ssim[k])
+            #     n_img += len(total_psnr[k])
             self.logger.write_log(
                 "# Total AVG-PSNR={:.5}, AVG-SSIM={:.4}".format(
-                    sum_psnr / n_img, sum_ssim / n_img
+                    np.mean(total_psnr), np.mean(total_ssim)
                 )
             )
 
