@@ -326,7 +326,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--default_data", type=str, default=".", help="quick test, optional: DVD, GOPRO"
     )
-    parser.add_argument("--one_len", type=int, default=2)
+    parser.add_argument("--one_len", type=int, default=1)
     args = parser.parse_args()
     if args.default_data == "DVD":
         args.data_path = "./dataset/DVD/test"
