@@ -152,9 +152,9 @@ class Inference:
                     gts = [im[:new_h, :new_w, :] for im in gts]
                     in_tensor = self.numpy2tensor(inputs).to(self.device)
                     preprocess_time = time.time()
-                    # print(in_tensor.shape)
+                    print(in_tensor.shape)
                     _, _, _, H, W = in_tensor.shape
-                    # print(in_tensor.shape)
+                    print(in_tensor.shape)
 
                     output = self.net(in_tensor.half())
                     # print(output.shape)
